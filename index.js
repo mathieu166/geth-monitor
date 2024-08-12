@@ -38,15 +38,23 @@ const getLastTimestamp = (dbPath, minerAddress) => {
 // Define the endpoint to check Geth status
 app.get('/check-geth', async (req, res) => {
   try {
+    let responseText = '';
     if (dbPath && minerAddress) {
       // Check the database for the last timestamp
       const lastTimestamp = await getLastTimestamp(dbPath, minerAddress);
       const oneHourAgo = Math.floor(Date.now() / 1000) - 3600;
-      
-      console.log(lastTimestamp, oneHourAgo)
-      if (lastTimestamp && lastTimestamp < oneHourAgo) {
-        res.status(500).send('Geth not validating anymore');
-        return;
+
+      if (lastTimestamp) {
+        const timeSinceLastBlock = Math.floor(Date.now() / 1000) - lastTimestamp;
+        const timeSinceLastBlockFormatted = new Date(timeSinceLastBlock * 1000).toISOString().substr(11, 8); // HH:MM:SS
+
+        if (lastTimestamp < oneHourAgo) {
+          responseText = `Geth not validating anymore. Last block was ${timeSinceLastBlockFormatted} ago.`;
+          res.status(500).send(responseText);
+          return;
+        }
+
+        responseText = `Last block was ${timeSinceLastBlockFormatted} ago. `;
       }
     }
 
@@ -58,9 +66,9 @@ app.get('/check-geth', async (req, res) => {
 
     // Check some condition (e.g., there should be at least one peer)
     if (peers > 0) {
-      res.status(200).send(`Geth is running. Number of peers: ${peers}`);
+      res.status(200).send(responseText + `Geth is running. Number of peers: ${peers}`);
     } else {
-      res.status(500).send('Geth is not connected to any peers.');
+      res.status(500).send(responseText + 'Geth is not connected to any peers.');
     }
   } catch (error) {
     res.status(500).send(`Error: ${error.message}`);
