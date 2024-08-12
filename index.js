@@ -6,6 +6,8 @@ const path = require('path');
 const app = express();
 const port = 3001;
 
+require('dotenv').config();
+
 // Load environment variables
 const dbPath = process.env.GETH_STATS_DB_PATH;
 const minerAddress = process.env.MINER_ADDRESS;
